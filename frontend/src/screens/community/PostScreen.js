@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useUserContext } from '../../contexts/UserContext';
+import { URL } from '../../../env';
 
 // 더미데이터
 const post = {
@@ -33,76 +34,112 @@ const post = {
       nickname: '닉네임11',
       content: '내용11',
       createdDate: '22.01.01',
+      myReply: false,
     },
     {
       id: 2,
       nickname: '닉네임22',
       content: '내용22',
       createdDate: '22.01.01',
+      myReply: true,
     },
     {
       id: 3,
       nickname: '닉네임33',
       content: '내용33',
       createdDate: '22.01.01',
+      myReply: true,
     },
   ],
 };
 
 const PostScreen = ({ route }) => {
-  const { token } = useUserContext();
+  const [token] = useUserContext();
 
-  const [postData, setPostData] = useState(post);
+  const [postData, setPostData] = useState();
+
+  useEffect(() => {
+    console.log(post.user);
+  }, [post.user]);
 
   const [text, setText] = useState('');
   const [like, setLike] = useState(false);
-  const [commentWrited, setCommentWrited] = useState(false);
+  const [rerendering, setRerendering] = useState(false);
 
-  const getPostApi = async (postId) => {
-    try {
-      const response = await axios.get(`${URL}/community/${postId}`, {
-        headers: {
-          accessToken: token,
-        },
+  const getPostApi = (postId) => {
+    fetch(`${URL}/community/${postId}`, {
+      method: 'GET', //메소드 지정
+      headers: {
+        //데이터 타입 지정
+        'Content-Type': 'application/json; charset=utf-8',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json()) // 리턴값이 있으면 리턴값에 맞는 req 지정
+      .then((res) => {
+        console.log(res); // 리턴값에 대한 처리
+        // 성공하면!
+        setPostData(res);
+        setLike(res.userLikePost);
+      })
+      .catch((error) => {
+        console.log(error);
       });
-      console.log(response.data);
-      // 실패하면 ..?
-      // 성공하면!
-      setPostData(response.data);
-      setLike(response.data.userLikePost);
-    } catch (error) {
-      console.error(error);
-    }
   };
 
   useEffect(() => {
-    console.log(route.params.postId);
-    getPostApi(route.params.postId);
-  }, [route.params.postId, commentWrited]);
+    console.log(route.params.post.id);
+    getPostApi(route.params.post.id);
+  }, [route.params.post.id, rerendering]);
 
-  const writeCommentApi = async (postId) => {
+  const writeCommentApi = (postId) => {
     const data = {
       content: text,
     };
-
-    try {
-      const response = await axios.post(
-        `${URL}/community/${postId}/reply`,
-        data,
-        {
-          headers: {
-            accessToken: token,
-          },
-        }
-      );
-      console.log(response.data);
-      // 실패하면 ..?
-      // 성공하면! 다시 리렌더링
-      setCommentWrited(true);
-    } catch (error) {
-      console.error(error);
-    }
+    fetch(`${URL}/community/${postId}/reply`, {
+      method: 'POST', //메소드 지정
+      headers: {
+        //데이터 타입 지정
+        'Content-Type': 'application/json; charset=utf-8',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    })
+      .then((res) => res.json()) // 리턴값이 있으면 리턴값에 맞는 req 지정
+      .then((res) => {
+        console.log(res); // 리턴값에 대한 처리
+        // 성공하면!
+        res && setRerendering(!rerendering);
+        res && setText('');
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
+
+  // const writeCommentApi = async (postId) => {
+  //   const data = {
+  //     content: text,
+  //   };
+
+  //   try {
+  //     const response = await axios.post(
+  //       `${URL}/community/${postId}/reply`,
+  //       data,
+  //       {
+  //         headers: {
+  //           accessToken: token,
+  //         },
+  //       }
+  //     );
+  //     console.log(response.data);
+  //     // 실패하면 ..?
+  //     // 성공하면! 다시 리렌더링
+  //     setRerendering(!rerendering);
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
 
   const onSubmit = () => {
     if (!text) {
@@ -111,61 +148,135 @@ const PostScreen = ({ route }) => {
       ]);
     } else {
       // 댓글 등록 api 호출
-      writeCommentApi();
+      writeCommentApi(postData.id);
     }
   };
+
+  const likeApi = (postId) => {
+    fetch(`${URL}/community/${postId}/like`, {
+      method: 'PUT', //메소드 지정
+      headers: {
+        //데이터 타입 지정
+        'Content-Type': 'application/json; charset=utf-8',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json()) // 리턴값이 있으면 리턴값에 맞는 req 지정
+      .then((res) => {
+        console.log(res); // 리턴값에 대한 처리
+        // 성공하면!
+        res && setRerendering(!rerendering);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
+
+  // const likeApi = async (postId) => {
+
+  //   try {
+  //     const response = await axios.put(`${URL}/community/${postId}/like`, {
+  //       headers: {
+  //         accessToken: token,
+  //       },
+  //     });
+  //     console.log(response.data);
+  //     // 실패하면 ..?
+  //     // 성공하면! 다시 리렌더링
+  //     setRerendering(!rerendering);
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
 
   const onClickLike = () => {
     setLike(!like);
     // 좋아요 api 호출
+    likeApi(postData.id);
   };
 
   return (
     <View style={styles.container}>
-      <FlatList
-        style={styles.commentContainer}
-        data={postData.postReplyList}
-        renderItem={({ item }) => <Comment data={item} />}
-        ItemSeparatorComponent={() => <View style={styles.separator}></View>}
-        ListHeaderComponent={
-          <View style={styles.postContainer}>
-            <Text style={styles.nickname}>{postData.title}</Text>
-            <View style={styles.explainContainer}>
-              <Text style={styles.explain}>{postData.createdDate}</Text>
-              <Text style={styles.explain}>|</Text>
-              <Text style={styles.explain}>{postData.nickname}</Text>
-            </View>
-            <View style={styles.imageContainer}>
-              <Image
-                source={require('../../../assets/comap.png')}
-                style={styles.image}
-                // resizeMode={'cover'}
-              />
-            </View>
-            <Text style={styles.content}>{postData.content}</Text>
-            <Pressable style={styles.button} onPress={onClickLike} hitSlop={10}>
-              <Text style={styles.buttonText}>좋아요</Text>
-              {like ? (
-                <MaterialCommunityIcons
-                  style={styles.icon}
-                  name={'cards-heart'}
-                  size={25}
+      {postData && (
+        <FlatList
+          style={styles.commentContainer}
+          data={postData.postReplyList}
+          renderItem={({ item }) => (
+            <Comment
+              comment={item}
+              postId={postData.id}
+              setRerendering={setRerendering}
+              rerendering={rerendering}
+            />
+          )}
+          ItemSeparatorComponent={() => <View style={styles.separator}></View>}
+          ListHeaderComponent={
+            <View style={styles.postContainer}>
+              <Text style={styles.title}>{postData.title}</Text>
+              <View style={styles.explainContainer}>
+                <Text style={styles.explain}>{postData.createdDate}</Text>
+                <Text style={styles.explain}>|</Text>
+                <Text style={styles.explain}>{postData.user.nickname}</Text>
+              </View>
+              <View style={styles.imageContainer}>
+                <Image
+                  source={require('../../../assets/comap.png')}
+                  style={styles.image}
+                  // resizeMode={'cover'}
                 />
-              ) : (
-                <MaterialCommunityIcons
-                  style={styles.icon}
-                  name={'cards-heart-outline'}
-                  size={25}
-                />
-              )}
-            </Pressable>
-          </View>
-        }
-      />
+              </View>
+              <Text style={styles.content}>{postData.content}</Text>
+              <View style={styles.buttonContainer}>
+                <Pressable
+                  style={styles.button}
+                  onPress={onClickLike}
+                  hitSlop={10}
+                >
+                  <Text style={styles.buttonText}>좋아요</Text>
+                  {like ? (
+                    <MaterialCommunityIcons
+                      style={styles.icon}
+                      name={'cards-heart'}
+                      size={25}
+                    />
+                  ) : (
+                    <MaterialCommunityIcons
+                      style={styles.icon}
+                      name={'cards-heart-outline'}
+                      size={25}
+                    />
+                  )}
+                </Pressable>
+                <View style={styles.numberContainer}>
+                  <MaterialCommunityIcons
+                    style={[styles.icon, { color: '#991b1b' }]}
+                    name={'cards-heart-outline'}
+                    size={18}
+                    color={GRAY.DARK}
+                  />
+                  <Text style={[styles.number, { color: '#991b1b' }]}>
+                    {post.liked ? post.liked : 0}
+                  </Text>
+                  <MaterialCommunityIcons
+                    style={[styles.icon, { color: '#075985' }]}
+                    name={'comment-outline'}
+                    size={18}
+                    color={GRAY.DARK}
+                  />
+                  <Text style={[styles.number, { color: '#075985' }]}>
+                    {post.postReplyCount ? post.postReplyCount : 0}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          }
+        />
+      )}
+
       <View style={styles.searchContainer}>
         <TextInput
           value={text}
-          onChangeText={(text) => setText(text.trim())}
+          onChangeText={(text) => setText(text)}
           style={styles.search}
           placeholder={'댓글을 작성해주세요.'}
           returnKeyType={'done'}
@@ -208,6 +319,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: GRAY.DEFAULT,
   },
+  title: {
+    fontSize: 25,
+    lineHeight: 30,
+    fontWeight: '700',
+  },
   nickname: {
     paddingVertical: 5,
     fontSize: 25,
@@ -242,6 +358,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 25,
   },
+  buttonContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+  },
   button: {
     flexDirection: 'row',
     marginVertical: 20,
@@ -260,6 +382,13 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 20,
     lineHeight: 25,
+  },
+  numberContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  number: {
+    paddingLeft: 3,
   },
   separator: {
     marginVertical: 5,

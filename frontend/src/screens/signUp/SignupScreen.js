@@ -21,7 +21,7 @@ import HR from '../../components/login/HR';
 import CheckButton from '../../components/signup/CheckButton';
 import RadioButton from '../../components/signup/RadioButton';
 import SignupDropdown from '../../components/signup/SignupDropDown';
-import axios from 'axios';
+import { URL } from '../../../env';
 
 const SignUpScreen = () => {
   const [id, setId] = useState('');
@@ -32,7 +32,7 @@ const SignUpScreen = () => {
   const [nickname, setNickname] = useState('');
   const [age, setAge] = useState(null);
   const [gender, setGender] = useState(0); // 0: 남자, 1: 여자
-  const [disability, setDisability] = useState([]);
+  const [disability, setDisability] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [disabled, setDisabled] = useState(true);
@@ -49,7 +49,7 @@ const SignUpScreen = () => {
         password !== passwordConfirm ||
         !email ||
         !nickname ||
-        disability.length === 0
+        !disability
     );
   }, [idCheck, email, password, passwordConfirm, nickname, disability]);
 
@@ -58,27 +58,56 @@ const SignUpScreen = () => {
     setIdCheck(false);
   };
 
-  const signUpApi = async () => {
+  const signUpApi = () => {
     const data = {
       username: id,
       password: password,
       email: email,
       nickname: nickname,
-      age: age, // 필수값 아님..?
-      // 성별이랑 장애유형도 넣을 수 있어야 함
+      age: age,
       gender: gender,
-      type: disability,
+      userType: disability,
     };
-
-    try {
-      const response = await axios.post(`${URL}/user/join`, data);
-      console.log(response.data);
-      // 회원가입 성공하면 로그인 페이지로 이동하기!
-      navigate(AuthRoutes.LOG_IN);
-    } catch (error) {
-      console.error(error);
-    }
+    console.log(data);
+    fetch(`${URL}/user/join`, {
+      method: 'POST', //메소드 지정
+      headers: {
+        //데이터 타입 지정
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify(data), //실제 데이터 파싱하여 body에 저장
+    })
+      .then((res) => res.json()) // 리턴값이 있으면 리턴값에 맞는 req 지정
+      .then((res) => {
+        console.log(res); // 리턴값에 대한 처리
+        navigate(AuthRoutes.LOG_IN);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
+
+  // const signUpApi = async () => {
+  //   const data = {
+  //     username: id,
+  //     password: password,
+  //     email: email,
+  //     nickname: nickname,
+  //     age: age, // 필수값 아님..?
+  //     // 성별이랑 장애유형도 넣을 수 있어야 함
+  //     // gender: gender,
+  //     // type: disability,
+  //   };
+
+  //   try {
+  //     const response = await axios.post(`${URL}/user/join`, data);
+  //     console.log(response.data);
+  //     // 회원가입 성공하면 로그인 페이지로 이동하기!
+  //     navigate(AuthRoutes.LOG_IN);
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
 
   const onSubmit = () => {
     Keyboard.dismiss();
@@ -95,20 +124,48 @@ const SignUpScreen = () => {
     }
   };
 
-  const checkIdApi = async () => {
+  const checkIdApi = () => {
     const data = {
       username: id,
     };
-
-    try {
-      const response = await axios.post(`${URL}/user/join/username`, data);
-      console.log(response.data);
-      // 중복확인 성공하면
-      setIdCheck(true);
-    } catch (error) {
-      console.error(error);
-    }
+    fetch(`${URL}/user/join/username`, {
+      method: 'POST', //메소드 지정
+      headers: {
+        //데이터 타입 지정
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify(data), //실제 데이터 파싱하여 body에 저장
+    })
+      .then((res) => res.json()) // 리턴값이 있으면 리턴값에 맞는 req 지정
+      .then((res) => {
+        console.log(res); // 리턴값에 대한 처리
+        if (res) {
+          Alert.alert('아이디 중복', '아이디값이 중복됩니다.', [
+            { text: '확인', onPress: () => {} },
+          ]);
+        } else {
+          setIdCheck(true);
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
+
+  // const checkIdApi = async () => {
+  //   const data = {
+  //     username: id,
+  //   };
+
+  //   try {
+  //     const response = await axios.post(`${URL}/user/join/username`, data);
+  //     console.log(response.data);
+  //     // 중복확인 성공하면
+  //     setIdCheck(true);
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
 
   const onCheckId = () => {
     Keyboard.dismiss();

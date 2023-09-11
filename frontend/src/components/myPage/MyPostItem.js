@@ -11,22 +11,38 @@ import { GRAY, PRIMARY } from '../../colors';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-const MyPostItem = ({ post }) => {
+const MyPostItem = ({ post, isModify }) => {
   const navigation = useNavigation();
   const windowWidth = Dimensions.get('window').width;
 
+  const onChangePage = () => {
+    if (isModify) {
+      navigation.navigate(
+        '내가 작성한 글',
+        {
+          post,
+        }
+        // { isModify: true }
+      );
+    } else {
+      navigation.navigate('내가 작성한 글', {
+        postId: post.Id,
+        isModify: false,
+      });
+    }
+  };
   return (
     <Pressable
       style={[styles.container, { width: windowWidth - 50 }]}
-      onPress={() => navigation.navigate('내가 작성한 글', { postId: 1 })}
+      onPress={() => onChangePage()}
     >
       <View style={styles.textContainer}>
         <Text style={styles.title}>{post.title}</Text>
-        <Text style={styles.content}>{post.name}</Text>
+        <Text style={styles.content}>{post.content}</Text>
         <View style={styles.explainContainer}>
-          <Text style={styles.explain}>{post.date}</Text>
+          <Text style={styles.explain}>{post.createdDate}</Text>
           <Text style={styles.explainSeparator}>|</Text>
-          <Text style={styles.explain}>{post.nickname}</Text>
+          <Text style={styles.explain}>{post.user.nickname}</Text>
           <Text style={styles.explainSeparator}>|</Text>
           <MaterialCommunityIcons
             style={[styles.icon, { color: '#991b1b' }]}
@@ -35,7 +51,7 @@ const MyPostItem = ({ post }) => {
             color={GRAY.DARK}
           />
           <Text style={[styles.explain, { color: '#991b1b' }]}>
-            {post.like}
+            {post.liked}
           </Text>
           <MaterialCommunityIcons
             style={[styles.icon, { color: '#075985' }]}
@@ -62,6 +78,7 @@ const MyPostItem = ({ post }) => {
 MyPostItem.propTypes = {
   post: PropTypes.object,
   onPress: PropTypes.func,
+  isModify: PropTypes.bool,
 };
 
 const styles = StyleSheet.create({
